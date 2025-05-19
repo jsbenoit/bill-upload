@@ -1,48 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Upload Bill</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Your Bill - BillSwap</title>
   <style>
-    body { font-family: Arial; margin: 30px; }
-    input[type="file"] { margin-bottom: 10px; }
-    button { padding: 8px 16px; }
-    #output { margin-top: 20px; white-space: pre-wrap; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fc;
+      color: #1f2937;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+    p {
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+      color: #4b5563;
+    }
+
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+
+    button {
+      background-color: #4f46e5;
+      color: white;
+      padding: 12px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #4338ca;
+    }
+
+    .success {
+      color: green;
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
-  <h2>Upload Your Bill</h2>
-  <input type="file" id="fileInput" accept="image/*"><br>
-  <button onclick="uploadBill()">Upload</button>
+  <div class="container">
+    <h1>Upload Your Bill</h1>
+    <p>Select your bill image or PDF below. BillSwap will analyze it and find better options instantly.</p>
 
-  <div id="output"></div>
+    <form id="uploadForm">
+      <input type="file" name="file" id="fileInput" required />
+      <br />
+      <button type="submit">Submit</button>
+      <p id="responseMsg" class="success"></p>
+    </form>
+  </div>
 
   <script>
-    async function uploadBill() {
+    const form = document.getElementById('uploadForm');
+    const responseMsg = document.getElementById('responseMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
       const fileInput = document.getElementById('fileInput');
-      const output = document.getElementById('output');
-      output.textContent = "Uploading...";
-
-      if (!fileInput.files.length) {
-        output.textContent = "Please select a file first.";
-        return;
-      }
-
       const file = fileInput.files[0];
+      if (!file) return;
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append('file', file);
 
       try {
-        const response = await fetch("https://bill-comparison-api-production.up.railway.app/analyze-bill?debug=true", {
-          method: "POST",
+        const response = await fetch('https://bill-comparison-api-production.up.railway.app/analyze-bill?debug=true', {
+          method: 'POST',
           body: formData
         });
 
-        const result = await response.json();
-        output.textContent = JSON.stringify(result, null, 2);
-      } catch (error) {
-        output.textContent = "Error: " + error.message;
+        const data = await response.json();
+
+        if (response.ok) {
+          responseMsg.textContent = `✅ Bill uploaded successfully. Monthly cost: $${data.bill.monthly_cost}, Speed: ${data.bill.speed_mbps} Mbps.`;
+        } else {
+          responseMsg.textContent = `❌ Error: ${data.error || 'Something went wrong.'}`;
+        }
+      } catch (err) {
+        responseMsg.textContent = `❌ Error uploading bill.`;
+        console.error(err);
       }
-    }
+    });
   </script>
 </body>
 </html>
