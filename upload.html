@@ -52,7 +52,10 @@
     <h2>Upload Your Bill</h2>
     <p>Select your bill image or PDF below. BillSwap will analyze it and show cheaper options.</p>
 
-    <form id="uploadForm">
+    <form id="uploadForm"
+      action="https://billswap-proxy.jsbenoit.workers.dev"
+      method="POST"
+      enctype="multipart/form-data">
       <input type="file" id="file" name="file" accept="image/*,.pdf" capture="environment" required><br>
       <button type="submit">Upload & Analyze</button>
     </form>
