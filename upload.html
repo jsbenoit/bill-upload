@@ -52,20 +52,25 @@
     <h2>Upload Your Bill</h2>
     <p>Select your bill image or PDF below. BillSwap will analyze it and show cheaper options.</p>
 
-    <form id="uploadForm"
-      action="https://billswap-proxy.jsbenoit.workers.dev"
-      method="POST"
-      enctype="multipart/form-data">
+    <form id="uploadForm" enctype="multipart/form-data">
       <input type="file" id="file" name="file" accept="image/*,.pdf" capture="environment" required><br>
       <button type="submit">Upload & Analyze</button>
     </form>
 
-    <pre id="resultBox"></pre>
+    <div id="resultBox" style="display:none; margin-top: 1rem;">
+      <h3>Bill Summary</h3>
+      <p><strong>Provider:</strong> <span id="provider"></span></p>
+      <p><strong>Monthly Cost:</strong> $<span id="cost"></span></p>
+      <p><strong>Speed:</strong> <span id="speed"></span> Mbps</p>
+
+      <div id="offersContainer" style="margin-top: 1rem;"></div>
+    </div>
+
   </div>
 
   <script>
-    const API_ENDPOINT = "https://bill-comparison-api-production.up.railway.app/analyze-bill?debug=true";
-    const API_KEY = "BILLSWAP_API_KEY"; // 🔐 Replace with actual key and keep it secure
+    const API_ENDPOINT = "https://billswap-proxy.jsbenoit.workers.dev";
+    const API_KEY = "BILLSWAP_API_KEY"; // Replace if you use a protected version
 
     document.getElementById("uploadForm").addEventListener("submit", async function(event) {
       event.preventDefault();
@@ -74,6 +79,12 @@
       const file = fileInput.files[0];
       const formData = new FormData();
       formData.append("file", file);
+
+      const resultBox = document.getElementById("resultBox");
+      const offersContainer = document.getElementById("offersContainer");
+
+      resultBox.style.display = "none";
+      offersContainer.innerHTML = ""; // clear previous results
 
       try {
         const response = await fetch(API_ENDPOINT, {
@@ -85,11 +96,36 @@
         });
 
         const result = await response.json();
-        document.getElementById("resultBox").textContent = JSON.stringify(result, null, 2);
+
+        if (result.error) {
+          resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
+        } else {
+          document.getElementById("provider").textContent = result.bill.provider;
+          document.getElementById("cost").textContent = result.bill.monthly_cost.toFixed(2);
+          document.getElementById("speed").textContent = result.bill.speed_mbps;
+          resultBox.style.display = "block";
+
+          if (result.offers.length > 0) {
+            result.offers.forEach((offer) => {
+            const offerHTML = `
+                <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
+                  <strong>${offer.provider}</strong><br>
+                  $${offer.monthly_cost.toFixed(2)} – ${offer.speed_mbps} Mbps<br>
+                  <a href="${offer.link}" target="_blank" style="color: #5B2EFF;">View Deal</a>
+                </div>
+              `;
+              offersContainer.innerHTML += offerHTML;
+            });
+          } else {
+           offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
+          }
+        }
       } catch (err) {
-        document.getElementById("resultBox").textContent = "Error: " + err.message;
+        resultBox.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+        resultBox.style.display = "block";
       }
     });
   </script>
+
 </body>
 </html>
