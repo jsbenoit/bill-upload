@@ -66,11 +66,11 @@
       <div id="offersContainer" style="margin-top: 1rem;"></div>
     </div>
   </div>
-
+  
   <script>
     const API_ENDPOINT = "https://billswap-proxy.jsbenoit.workers.dev";
 
-    document.getElementById("uploadForm").addEventListener("submit", async function (event) {
+    document.getElementById("uploadForm").addEventListener("submit", async function(event) {
       event.preventDefault();
 
     const fileInput = document.getElementById("file");
@@ -82,55 +82,43 @@
     const offersContainer = document.getElementById("offersContainer");
 
     resultBox.style.display = "none";
-    offersContainer.innerHTML = ""; // Clear old results
+    offersContainer.innerHTML = "";
 
     try {
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
-        body: formData,
+        body: formData
       });
 
       const result = await response.json();
-      console.log("🔍 Full API Response:", result);
 
       if (result.error) {
         resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
       } else {
         const bill = result.bill || {};
-        const provider = bill.provider ?? "Provider N/A";
-        const monthlyCost = bill.price != null
-          ? Number(bill.price).toFixed(2)
-          : "Monthly Cost N/A";
-        const speed = bill.min_speed != null
-          ? bill.min_speed
-          : "Speed N/A";
+        const offers = result.offers || [];
 
-        // Display summary safely
+        const provider = bill.provider ?? "Provider N/A";
+        const cost = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "Monthly Cost N/A";
+        const speed = bill.speed_mbps != null ? `${bill.speed_mbps} Mbps` : "Speed N/A";
+
         document.getElementById("provider").textContent = provider;
-        document.getElementById("cost").textContent = monthlyCost;
+        document.getElementById("cost").textContent = cost;
         document.getElementById("speed").textContent = speed;
 
         resultBox.style.display = "block";
 
-        // Render offers if available
-        if (Array.isArray(result.offers) && result.offers.length > 0) {
-          result.offers.forEach((offer) => {
-            const offerProvider = offer?.provider ?? "Unknown Provider";
-            const offerCost = offer?.monthly_cost != null
-              ? Number(offer.monthly_cost).toFixed(2)
-              : "Monthly Cost N/A";
-            const offerSpeed = offer?.speed_mbps != null
-              ? `${offer.speed_mbps} Mbps`
-              : "Speed N/A";
-            //const offerLink = offer?.link ?? "#";
-            const offerLink = offer.affiliatelink?.startsWith("http")
-              ? offer.affiliatelink
-              : "https://billswapapp.com/"; // fallback to valid full URL
+        if (offers.length > 0) {
+          offers.forEach((offer) => {
+            const offerProvider = offer.provider || "Unknown Provider";
+            const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
+            const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
+            const offerLink = offer.affiliatelink || "#";
 
             const offerHTML = `
               <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
                 <strong>${offerProvider}</strong><br>
-                $${offerCost} – ${offerSpeed}<br>
+                ${offerCost} – ${offerSpeed}<br>
                 <a href="${offerLink}" target="_blank" style="color: #5B2EFF;">View Deal</a>
               </div>
             `;
@@ -141,12 +129,10 @@
         }
       }
     } catch (err) {
-      console.error("❌ Upload failed:", err);
       resultBox.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
       resultBox.style.display = "block";
     }
   });
-</script>
-
+  </script>
 </body>
 </html>
