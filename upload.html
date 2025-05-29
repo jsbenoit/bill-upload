@@ -68,12 +68,16 @@
   </div>
   
   <script>
-    
-    function openFlutterComparison(offer, currentBill) {
-      // Construct a dynamic URL to your embedded FlutterFlow app route
-      // const basePath = "https://your-flutterflow-app.web.app/#/comparisonpage";  // ← Update this to your actual hosted route
-      const basePath = "https://billswap-app.flutterflow.app/#/comparisonpage";  // ← Update this to your actual hosted route
 
+    function openFlutterComparison(offer, currentBill) {
+      // Dynamically grab base FlutterFlow debug URL from parent frame
+      const baseURL = window.parent?.location?.origin || window.location.origin;
+      const comparisonPath = "/#/comparisonpage";
+
+      // Ensure baseURL includes full path when using test mode
+      const fullURL = `${baseURL}${comparisonPath}`;
+
+      // Safely encode query params
       const params = new URLSearchParams({
         planTitle: offer.title || "N/A",
         planPrice: offer.price != null ? offer.price.toFixed(2) : "N/A",
@@ -81,17 +85,16 @@
         planSpeed: offer.min_speed != null ? offer.min_speed : "N/A",
         planLink: offer.affiliatelink || "#",
 
-        currentProvider: currentBill.provider || "N/A",
-        currentCost: currentBill.monthly_cost != null ? currentBill.monthly_cost.toFixed(2) : "N/A",
-        currentSpeed: currentBill.speed_mbps || "N/A"
+        currentProvider: currentBill?.provider || "N/A",
+        currentCost: currentBill?.monthly_cost != null ? currentBill.monthly_cost.toFixed(2) : "N/A",
+        currentSpeed: currentBill?.speed_mbps != null ? currentBill.speed_mbps : "N/A",
       });
 
-      const finalURL = `${basePath}?${params.toString()}`;
+      const finalURL = `${fullURL}?${params.toString()}`;
 
-      // Navigate into your FlutterFlow app via WebView or full-page load
-      window.location.href = finalURL;
+      // Redirect the parent (FlutterFlow debug window) to your ComparisonPage
+      window.parent.location.href = finalURL;
     }
-
     
     const API_ENDPOINT = "https://billswap-proxy.jsbenoit.workers.dev";
 
