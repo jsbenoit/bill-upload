@@ -145,21 +145,57 @@
         resultBox.style.display = "block";
 
         if (offers.length > 0) {
-          offers.forEach((offer) => {
+          offers.forEach((offer, index) => {
             const offerProvider = offer.provider || "Unknown Provider";
             const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
             const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
-            const offerLink = offer.affiliatelink || "#";
 
             const offerHTML = `
               <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
                 <strong>${offerProvider}</strong><br>
                 ${offerCost} – ${offerSpeed}<br>
-                <button onclick='openFlutterComparison(${JSON.stringify(offer)}, ${JSON.stringify(currentBill)})' style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
+                <button class="view-deal-btn" data-index="${index}" style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
               </div>
             `;
             offersContainer.innerHTML += offerHTML;
           });
+
+          // 🔒 Store currentBill and offers globally for button access
+          window.currentBill = currentBill;
+          window.offers = offers;
+
+          // ✅ Add event listener separately after rendering
+          document.querySelectorAll(".view-deal-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              const index = e.target.getAttribute("data-index");
+              const selectedOffer = window.offers[index];
+              if (!selectedOffer || !window.currentBill) {
+                alert("Missing data to navigate");
+                return;
+              }
+              openFlutterComparison(selectedOffer, window.currentBill);
+            });
+          });
+
+
+          
+         // offers.forEach((offer) => {
+         //   const offerProvider = offer.provider || "Unknown Provider";
+         //   const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
+         //   const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
+         //   const offerLink = offer.affiliatelink || "#";
+
+         //   const offerHTML = `
+         //     <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
+         //       <strong>${offerProvider}</strong><br>
+         //       ${offerCost} – ${offerSpeed}<br>
+         //       <button onclick='openFlutterComparison(${JSON.stringify(offer)}, ${JSON.stringify(currentBill)})' style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
+         //     </div>
+         //   `;
+         //   offersContainer.innerHTML += offerHTML;
+         // });
+
+          
         } else {
           offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
         }
