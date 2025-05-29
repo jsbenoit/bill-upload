@@ -122,7 +122,7 @@
             const offerSpeed = offer?.speed_mbps != null
               ? `${offer.speed_mbps} Mbps`
               : "Speed N/A";
-            const offerLink = offer?.link ?? "#";
+            //const offerLink = offer?.link ?? "#";
             const offerLink = offer.affiliatelink?.startsWith("http")
               ? offer.affiliatelink
               : "https://billswapapp.com/"; // fallback to valid full URL
