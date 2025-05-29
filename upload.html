@@ -71,12 +71,19 @@
     
     function openFlutterComparison(offer, currentBill) {
       let baseURL;
+      
       try {
         // Try to access parent frame origin (only works in debug inside FlutterFlow)
         baseURL = window.parent.location.origin;
-      } catch (e) {
-        console.warn("Cross-origin access blocked – falling back to production URL.");
-        baseURL = "https://billswap-app.web.app"; // ✅ your deployed FlutterFlow app
+      } catch (err) {
+        // If not embedded (i.e., opened directly), check if you're on GitHub Pages
+        if (window.location.hostname.includes("github.io")) {
+          alert("This only works inside the BillSwap app. Please run this inside FlutterFlow debug or deploy your app.");
+          return;
+        } else {
+          console.warn("Cross-origin access blocked – falling back to production URL.");
+          baseURL = "https://billswap-app.web.app";  // ✅ your deployed FlutterFlow app
+        }
       }
 
       const comparisonPath = "/#/comparisonpage";
