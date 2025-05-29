@@ -60,12 +60,11 @@
     <div id="resultBox" style="display:none; margin-top: 1rem;">
       <h3>Bill Summary</h3>
       <p><strong>Provider:</strong> <span id="provider"></span></p>
-      <p><strong>Monthly Cost:</strong> $<span id="cost"></span></p>
-      <p><strong>Speed:</strong> <span id="speed"></span> Mbps</p>
+      <p><strong>Monthly Cost:</strong> <span id="cost"></span></p>
+      <p><strong>Speed:</strong> <span id="speed"></span></p>
 
       <div id="offersContainer" style="margin-top: 1rem;"></div>
     </div>
-
   </div>
 
   <script>
@@ -83,7 +82,7 @@
       const offersContainer = document.getElementById("offersContainer");
 
       resultBox.style.display = "none";
-      offersContainer.innerHTML = ""; // clear previous results
+      offersContainer.innerHTML = "";
 
       try {
         const response = await fetch(API_ENDPOINT, {
@@ -96,44 +95,44 @@
         if (result.error) {
           resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
         } else {
-          // prevent our UI from crashing when Provider is missing in the OCR response.
-          document.getElementById("provider").textContent = 
-            result.bill?.provider != null 
-              ? result.bill.provider 
-              : "Provider N/A";
+          const bill = result.bill || {};
 
-          // prevent our UI from crashing when monthly_cost is missing in the OCR response.
-          document.getElementById("cost").textContent = 
-            result.bill?.monthly_cost != null 
-              ? Number(result.bill.monthly_cost).toFixed(2) 
-              : "Monthly Cost N/A";
+          const provider = bill.provider ?? "N/A";
+          const cost = typeof bill.monthly_cost === "number"
+            ? `$${bill.monthly_cost.toFixed(2)}`
+            : "N/A";
+          const speed = typeof bill.speed_mbps === "number"
+            ? `${bill.speed_mbps} Mbps`
+            : "N/A";
 
-          // prevent our UI from crashing when speed_mbps is missing in the OCR response.
-          document.getElementById("speed").textContent = 
-            result.bill?.speed_mbps != null 
-              ? result.bill.speed_mbps 
-              : "Speed MBPS N/A";
-          
+          document.getElementById("provider").textContent = provider;
+          document.getElementById("cost").textContent = cost;
+          document.getElementById("speed").textContent = speed;
+
           resultBox.style.display = "block";
 
-          if (result.offers && result.offers.length > 0) {
+          if (Array.isArray(result.offers) && result.offers.length > 0) {
             result.offers.forEach((offer) => {
-            const provider = offer.provider || "Unknown Provider";
-            const monthlyCost = offer.monthly_cost != null ? offer.monthly_cost.toFixed(2) : "N/A";
-            const speed = offer.speed_mbps != null ? `${offer.speed_mbps} Mbps` : "Speed N/A";
-            const link = offer.link || "#";
+              const offerProvider = offer.provider ?? "Unknown Provider";
+              const offerCost = typeof offer.monthly_cost === "number"
+                ? `$${offer.monthly_cost.toFixed(2)}`
+                : "N/A";
+              const offerSpeed = typeof offer.speed_mbps === "number"
+                ? `${offer.speed_mbps} Mbps`
+                : "Speed N/A";
+              const offerLink = offer.link || "#";
 
-            const offerHTML = `
+              const offerHTML = `
                 <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
-                  <strong>${provider}</strong><br>
-                  $${monthlyCost} – ${speed}<br>
-                  <a href="${link}" target="_blank" style="color: #5B2EFF;">View Deal</a>
+                  <strong>${offerProvider}</strong><br>
+                  ${offerCost} – ${offerSpeed}<br>
+                  <a href="${offerLink}" target="_blank" style="color: #5B2EFF;">View Deal</a>
                 </div>
               `;
               offersContainer.innerHTML += offerHTML;
             });
           } else {
-           offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
+            offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
           }
         }
       } catch (err) {
@@ -142,6 +141,5 @@
       }
     });
   </script>
-
 </body>
 </html>
