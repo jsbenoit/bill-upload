@@ -70,6 +70,47 @@
   <script>
 
     function openFlutterComparison(offer, currentBill) {
+      const comparisonPath = "/#/comparisonpage";
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        planTitle: offer.title || "N/A",
+        planPrice: offer.price != null ? offer.price.toFixed(2) : "N/A",
+        planProvider: offer.provider || "N/A",
+        planSpeed: offer.min_speed != null ? offer.min_speed : "N/A",
+        planLink: offer.affiliatelink || "#",
+        type: "comparison",
+        currentProvider: currentBill?.provider || "N/A",
+        currentCost: currentBill?.monthly_cost != null ? currentBill.monthly_cost.toFixed(2) : "N/A",
+        currentSpeed: currentBill?.speed_mbps != null ? currentBill.speed_mbps : "N/A",
+      });
+
+      // Try to detect if we're inside a FlutterFlow debug iframe
+      try {
+        const isIframe = window.self !== window.top;
+        const isFlutterFlow = document.referrer.includes("flutterflow.io");
+
+        if (isIframe && isFlutterFlow) {
+          const debugOrigin = new URL(document.referrer).origin;
+          const finalURL = `${debugOrigin}${comparisonPath}?${params.toString()}`;
+          window.top.location.href = finalURL; // safe now that we verified origin
+          return;
+        }
+
+        // Fallback: assume deployed mode
+        const deployedBase = "https://billswap-app.flutterflow.app";
+        const finalURL = `${deployedBase}${comparisonPath}?${params.toString()}`;
+        window.location.href = finalURL;
+
+      } catch (err) {
+        alert("Unable to redirect properly. Please try inside FlutterFlow or deploy your app.");
+        console.error(err);
+      }
+    }
+
+
+    /*
+    function openFlutterComparison(offer, currentBill) {
       const params = {
         planTitle: offer.title || "N/A",
         planPrice: offer.price != null ? offer.price.toFixed(2) : "N/A",
@@ -91,6 +132,7 @@
         "*"
       );
     }
+    */
 
 /*
     function isRunningInsideFlutterFlow() {
