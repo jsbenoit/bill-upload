@@ -120,6 +120,13 @@
       if (result.error) {
         resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
       } else {
+        const currentBill = result.bill || {
+          provider: "Unknown",
+          monthly_cost: "N/A",
+          speed_mbps: "N/A"
+        };
+        localStorage.setItem("currentBill", JSON.stringify(currentBill));
+        
         const bill = result.bill || {};
         const offers = result.offers || [];
 
