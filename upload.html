@@ -84,6 +84,7 @@
         planProvider: offer.provider || "N/A",
         planSpeed: offer.min_speed != null ? offer.min_speed : "N/A",
         planLink: offer.affiliatelink || "#",
+        type: "comparison", // ✅ added field
 
         currentProvider: currentBill?.provider || "N/A",
         currentCost: currentBill?.monthly_cost != null ? currentBill.monthly_cost.toFixed(2) : "N/A",
