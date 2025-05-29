@@ -71,35 +71,28 @@
 
     function isRunningInsideFlutterFlow() {
       try {
-        const referrer = document.referrer || window.parent?.location?.href;
-        return referrer?.includes("flutterflow.io");
+        return document.referrer.includes("flutterflow.io");
       } catch (err) {
-        return false; // Cross-origin access blocked
+        return false;
       }
     }
 
     function openFlutterComparison(offer, currentBill) {
-      const deployedURL = "https://billswap-app.flutterflow.app"; // your deployed app URL
+      const debugBase = "https://app.flutterflow.io/debug";
+      const deployedBase = "https://billswap-app.flutterflow.app";
       const comparisonPath = "/#/comparisonpage";
 
       let baseURL;
 
-      // Case 1: Running inside FlutterFlow debug (iframe)
-      if (isRunningInsideFlutterFlow()) {
-        try {
-          baseURL = window.parent.location.origin;
-        } catch {
-          baseURL = deployedURL; // fallback if cross-origin access fails
-        }
-
-      // Case 2: Running directly on GitHub (unsupported)
-      } else if (window.location.origin.includes("jsbenoit.github.io")) {
+      if (document.referrer.includes("flutterflow.io")) {
+        // Inside FlutterFlow debug mode
+        baseURL = new URL(document.referrer).origin;
+      } else if (window.location.origin.includes("billswap-app")) {
+        // Inside deployed app
+        baseURL = deployedBase;
+      } else {
         alert("This only works inside the BillSwap app. Please run this inside FlutterFlow debug or deploy your app.");
         return;
-
-      // Case 3: Deployed version
-      } else {
-        baseURL = deployedURL;
       }
 
       const fullURL = `${baseURL}${comparisonPath}`;
@@ -111,10 +104,9 @@
         planSpeed: offer.min_speed != null ? offer.min_speed : "N/A",
         planLink: offer.affiliatelink || "#",
         type: "comparison",
-
         currentProvider: currentBill?.provider || "N/A",
         currentCost: currentBill?.monthly_cost != null ? currentBill.monthly_cost.toFixed(2) : "N/A",
-        currentSpeed: currentBill?.speed_mbps != null ? currentBill.speed_mbps : "N/A",
+        currentSpeed: currentBill?.speed_mbps != null ? currentBill.speed_mbps : "N/A"
       });
 
       const finalURL = `${fullURL}?${params.toString()}`;
