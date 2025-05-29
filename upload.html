@@ -98,11 +98,11 @@
       } else {
         const bill = result.bill || {};
         const provider = bill.provider ?? "Provider N/A";
-        const monthlyCost = bill.monthly_cost != null
-          ? Number(bill.monthly_cost).toFixed(2)
+        const monthlyCost = bill.price != null
+          ? Number(bill.price).toFixed(2)
           : "Monthly Cost N/A";
-        const speed = bill.speed_mbps != null
-          ? bill.speed_mbps
+        const speed = bill.min_speed != null
+          ? bill.min_speed
           : "Speed N/A";
 
         // Display summary safely
