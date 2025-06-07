@@ -48,6 +48,7 @@
   </style>
 </head>
 <body>
+  <!-- Our HTML UI and upload form goes here -->
   <div class="card">
     <h2>Upload Your Bill</h2>
     <p>Select your bill image or PDF below. BillSwap will analyze it and show cheaper options.</p>
@@ -66,9 +67,25 @@
       <div id="offersContainer" style="margin-top: 1rem;"></div>
     </div>
   </div>
-  
-  <script>
 
+  <script>
+    // ✅ Always get currentUID first — only after Firebase auth is initialized
+    let currentUID = null;
+
+    window.onload = function () {
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+          currentUID = user.uid;
+          console.log("✅ Logged in:", currentUID);
+        } else {
+          alert("❌ Please log in first");
+        }
+      });
+    };
+  </script>
+
+  <script>
+    // Our Upload & Analyze logic goes here and can use currentUID
     function openFlutterComparison(offer, currentBill) {
       let baseURL;
 
@@ -102,8 +119,6 @@
       });
 
       const finalURL = `${fullURL}?${params.toString()}`;
-
-      // ✅ Perform the redirect into FlutterFlow app
       window.parent.location.href = finalURL;
     }
 
@@ -112,110 +127,91 @@
     document.getElementById("uploadForm").addEventListener("submit", async function(event) {
       event.preventDefault();
 
-    const fileInput = document.getElementById("file");
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
+      const fileInput = document.getElementById("file");
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("user_id", currentUID); // ✅ Inject real UID
 
-    const resultBox = document.getElementById("resultBox");
-    const offersContainer = document.getElementById("offersContainer");
+      const resultBox = document.getElementById("resultBox");
+      const offersContainer = document.getElementById("offersContainer");
 
-    resultBox.style.display = "none";
-    offersContainer.innerHTML = "";
+      resultBox.style.display = "none";
+      offersContainer.innerHTML = "";
 
-    try {
-      const response = await fetch(API_ENDPOINT, {
-        method: "POST",
-        body: formData
-      });
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          method: "POST",
+          body: formData
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (result.error) {
-        resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
-      } else {
-        const currentBill = result.bill || {
-          provider: "Unknown",
-          monthly_cost: "N/A",
-          speed_mbps: "N/A"
-        };
-        localStorage.setItem("currentBill", JSON.stringify(currentBill));
-        
-        const bill = result.bill || {};
-        const offers = result.offers || [];
-
-        const provider = bill.provider ?? "Provider N/A";
-        const cost = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "Monthly Cost N/A";
-        const speed = bill.speed_mbps != null ? `${bill.speed_mbps} Mbps` : "Speed N/A";
-
-        document.getElementById("provider").textContent = provider;
-        document.getElementById("cost").textContent = cost;
-        document.getElementById("speed").textContent = speed;
-
-        resultBox.style.display = "block";
-
-        if (offers.length > 0) {
-          offers.forEach((offer, index) => {
-            const offerProvider = offer.provider || "Unknown Provider";
-            const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
-            const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
-
-            const offerHTML = `
-              <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
-                <strong>${offerProvider}</strong><br>
-                ${offerCost} – ${offerSpeed}<br>
-                <button class="view-deal-btn" data-index="${index}" style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
-              </div>
-            `;
-            offersContainer.innerHTML += offerHTML;
-          });
-
-          // 🔒 Store currentBill and offers globally for button access
-          window.currentBill = currentBill;
-          window.offers = offers;
-
-          // ✅ Add event listener separately after rendering
-          document.querySelectorAll(".view-deal-btn").forEach((btn) => {
-            btn.addEventListener("click", (e) => {
-              const index = parseInt(e.target.getAttribute("data-index"), 10);  // ✅ Fix here
-              const selectedOffer = window.offers[index];
-              if (!selectedOffer || !window.currentBill) {
-                alert("Missing data to navigate");
-                return;
-              }
-              console.log("Navigating with offer:", selectedOffer, "and bill:", window.currentBill);
-              openFlutterComparison(selectedOffer, window.currentBill);
-            });
-          });
-
-
-          
-         // offers.forEach((offer) => {
-         //   const offerProvider = offer.provider || "Unknown Provider";
-         //   const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
-         //   const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
-         //   const offerLink = offer.affiliatelink || "#";
-
-         //   const offerHTML = `
-         //     <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
-         //       <strong>${offerProvider}</strong><br>
-         //       ${offerCost} – ${offerSpeed}<br>
-         //       <button onclick='openFlutterComparison(${JSON.stringify(offer)}, ${JSON.stringify(currentBill)})' style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
-         //     </div>
-         //   `;
-         //   offersContainer.innerHTML += offerHTML;
-         // });
-
-          
+        if (result.error) {
+          resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
         } else {
-          offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
+          const currentBill = result.bill || {
+            provider: "Unknown",
+            monthly_cost: "N/A",
+            speed_mbps: "N/A"
+          };
+          localStorage.setItem("currentBill", JSON.stringify(currentBill));
+          
+          const bill = result.bill || {};
+          const offers = result.offers || [];
+
+          const provider = bill.provider ?? "Provider N/A";
+          const cost = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "Monthly Cost N/A";
+          const speed = bill.speed_mbps != null ? `${bill.speed_mbps} Mbps` : "Speed N/A";
+
+          document.getElementById("provider").textContent = provider;
+          document.getElementById("cost").textContent = cost;
+          document.getElementById("speed").textContent = speed;
+
+          resultBox.style.display = "block";
+
+          if (offers.length > 0) {
+            offers.forEach((offer, index) => {
+              const offerProvider = offer.provider || "Unknown Provider";
+              const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
+              const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
+
+              const offerHTML = `
+                <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
+                  <strong>${offerProvider}</strong><br>
+                  ${offerCost} – ${offerSpeed}<br>
+                  <button class="view-deal-btn" data-index="${index}" style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
+                </div>
+              `;
+              offersContainer.innerHTML += offerHTML;
+            });
+
+            window.currentBill = currentBill;
+            window.offers = offers;
+
+            document.querySelectorAll(".view-deal-btn").forEach((btn) => {
+              btn.addEventListener("click", (e) => {
+                const index = parseInt(e.target.getAttribute("data-index"), 10);
+                const selectedOffer = window.offers[index];
+                if (!selectedOffer || !window.currentBill) {
+                  alert("Missing data to navigate");
+                  return;
+                }
+                console.log("Navigating with offer:", selectedOffer, "and bill:", window.currentBill);
+                openFlutterComparison(selectedOffer, window.currentBill);
+              });
+            });
+
+          } else {
+            offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
+          }
         }
+      } catch (err) {
+        resultBox.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+        resultBox.style.display = "block";
       }
-    } catch (err) {
-      resultBox.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
-      resultBox.style.display = "block";
-    }
-  });
+    });
   </script>
 </body>
 </html>
+
