@@ -1,217 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Upload Your Bill – BillSwap</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f7f8fa;
+      font-family: "Inter", sans-serif;
+      background: #f3f4f6;
+      margin: 0;
       display: flex;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
     }
     .card {
       background: white;
+      border-radius: 16px;
       padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      text-align: center;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      text-align: center;
     }
     h2 {
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      font-weight: 600;
       color: #111827;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      font-size: 0.95rem;
+      color: #4b5563;
     }
     input[type="file"] {
-      margin: 1rem 0;
+      margin: 1.25rem 0;
+      font-size: 0.9rem;
     }
     button {
-      background-color: #5B2EFF;
+      background-color: #5b2eff;
       color: white;
-      padding: 0.75rem 1.5rem;
+      padding: 0.75rem 1.25rem;
       font-size: 1rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
+      margin-top: 0.5rem;
     }
-    pre {
-      margin-top: 1rem;
-      background: #f3f4f6;
-      padding: 1rem;
-      border-radius: 6px;
-      overflow-x: auto;
+    #resultBox {
+      display: none;
       text-align: left;
+      margin-top: 2rem;
+    }
+    .offer {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      padding: 0.75rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+    }
+    .offer button {
+      background: none;
+      color: #5b2eff;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
-  <!-- Our HTML UI and upload form goes here -->
   <div class="card">
     <h2>Upload Your Bill</h2>
-    <p>Select your bill image or PDF below. BillSwap will analyze it and show cheaper options.</p>
+    <p>Take a photo or upload a PDF. We'll analyze it and show you better deals.</p>
 
     <form id="uploadForm" enctype="multipart/form-data">
-      <input type="file" id="file" name="file" accept="image/*,.pdf" capture="environment" required><br>
+      <input type="file" id="file" name="file" accept="image/*,.pdf" capture="environment" required /><br />
       <button type="submit">Upload & Analyze</button>
     </form>
 
-    <div id="resultBox" style="display:none; margin-top: 1rem;">
+    <div id="resultBox">
       <h3>Bill Summary</h3>
       <p><strong>Provider:</strong> <span id="provider"></span></p>
       <p><strong>Monthly Cost:</strong> <span id="cost"></span></p>
       <p><strong>Speed:</strong> <span id="speed"></span></p>
-
-      <div id="offersContainer" style="margin-top: 1rem;"></div>
+      <div id="offersContainer"></div>
     </div>
   </div>
 
   <script>
-    // ✅ Always get currentUID first — only after Firebase auth is initialized
     let currentUID = null;
 
     window.onload = function () {
       firebase.auth().onAuthStateChanged(user => {
         if (user) {
           currentUID = user.uid;
-          console.log("✅ Logged in:", currentUID);
+          console.log("Logged in UID:", currentUID);
         } else {
-          alert("❌ Please log in first");
+          alert("Please log in to continue");
         }
       });
     };
-  </script>
 
-  <script>
-    // Our Upload & Analyze logic goes here and can use currentUID
     function openFlutterComparison(offer, currentBill) {
       let baseURL;
-
       try {
         const referrer = document.referrer;
         const parsedRef = new URL(referrer);
-
-        if (parsedRef.hostname.includes("flutterflow.io")) {
-          baseURL = `${parsedRef.origin}`;
-        } else {
-          throw new Error("Not embedded in FlutterFlow");
-        }
+        baseURL = parsedRef.hostname.includes("flutterflow.io") ? parsedRef.origin : null;
       } catch (err) {
-        alert("This only works inside the BillSwap app. Please run this inside FlutterFlow debug or deploy your app.");
+        alert("This feature only works within the app.");
         return;
       }
 
       const comparisonPath = "/#/comparisonpage";
-      const fullURL = `${baseURL}${comparisonPath}`;
-
       const params = new URLSearchParams({
         planTitle: offer.title || "N/A",
-        planPrice: offer.price != null ? offer.price.toFixed(2) : "N/A",
+        planPrice: offer.price?.toFixed(2) || "N/A",
         planProvider: offer.provider || "N/A",
-        planSpeed: offer.min_speed != null ? offer.min_speed : "N/A",
+        planSpeed: offer.min_speed || "N/A",
         planLink: offer.affiliatelink || "#",
         type: "comparison",
         currentProvider: currentBill?.provider || "N/A",
-        currentCost: currentBill?.monthly_cost != null ? currentBill.monthly_cost.toFixed(2) : "N/A",
-        currentSpeed: currentBill?.speed_mbps != null ? currentBill.speed_mbps : "N/A"
+        currentCost: currentBill?.monthly_cost?.toFixed(2) || "N/A",
+        currentSpeed: currentBill?.speed_mbps || "N/A",
       });
 
-      const finalURL = `${fullURL}?${params.toString()}`;
-      window.parent.location.href = finalURL;
+      window.parent.location.href = `${baseURL}${comparisonPath}?${params.toString()}`;
     }
 
     const API_ENDPOINT = "https://billswap-proxy.jsbenoit.workers.dev";
 
-    document.getElementById("uploadForm").addEventListener("submit", async function(event) {
+    document.getElementById("uploadForm").addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const fileInput = document.getElementById("file");
-      const file = fileInput.files[0];
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("user_id", currentUID); // ✅ Inject real UID
-
+      const file = document.getElementById("file").files[0];
       const resultBox = document.getElementById("resultBox");
       const offersContainer = document.getElementById("offersContainer");
-
       resultBox.style.display = "none";
       offersContainer.innerHTML = "";
 
-      try {
-        const response = await fetch(API_ENDPOINT, {
+      if (file && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Image = reader.result.split(",")[1];
+          const payload = {
+            image_base64: base64Image,
+            user_id: currentUID,
+          };
+
+          const response = await fetch(API_ENDPOINT + "/analyze-bill", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.json();
+          displayResults(result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("user_id", currentUID);
+
+        const response = await fetch(API_ENDPOINT + "/analyze-bill", {
           method: "POST",
-          body: formData
+          body: formData,
         });
 
         const result = await response.json();
-
-        if (result.error) {
-          resultBox.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
-        } else {
-          const currentBill = result.bill || {
-            provider: "Unknown",
-            monthly_cost: "N/A",
-            speed_mbps: "N/A"
-          };
-          localStorage.setItem("currentBill", JSON.stringify(currentBill));
-          
-          const bill = result.bill || {};
-          const offers = result.offers || [];
-
-          const provider = bill.provider ?? "Provider N/A";
-          const cost = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "Monthly Cost N/A";
-          const speed = bill.speed_mbps != null ? `${bill.speed_mbps} Mbps` : "Speed N/A";
-
-          document.getElementById("provider").textContent = provider;
-          document.getElementById("cost").textContent = cost;
-          document.getElementById("speed").textContent = speed;
-
-          resultBox.style.display = "block";
-
-          if (offers.length > 0) {
-            offers.forEach((offer, index) => {
-              const offerProvider = offer.provider || "Unknown Provider";
-              const offerCost = offer.price != null ? `$${offer.price.toFixed(2)}` : "$N/A";
-              const offerSpeed = offer.min_speed != null ? `${offer.min_speed} Mbps` : "Speed N/A";
-
-              const offerHTML = `
-                <div style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 8px; margin-top: 0.5rem;">
-                  <strong>${offerProvider}</strong><br>
-                  ${offerCost} – ${offerSpeed}<br>
-                  <button class="view-deal-btn" data-index="${index}" style="color: #5B2EFF; background: none; border: none; cursor: pointer;">View Deal</button>
-                </div>
-              `;
-              offersContainer.innerHTML += offerHTML;
-            });
-
-            window.currentBill = currentBill;
-            window.offers = offers;
-
-            document.querySelectorAll(".view-deal-btn").forEach((btn) => {
-              btn.addEventListener("click", (e) => {
-                const index = parseInt(e.target.getAttribute("data-index"), 10);
-                const selectedOffer = window.offers[index];
-                if (!selectedOffer || !window.currentBill) {
-                  alert("Missing data to navigate");
-                  return;
-                }
-                console.log("Navigating with offer:", selectedOffer, "and bill:", window.currentBill);
-                openFlutterComparison(selectedOffer, window.currentBill);
-              });
-            });
-
-          } else {
-            offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
-          }
-        }
-      } catch (err) {
-        resultBox.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
-        resultBox.style.display = "block";
+        displayResults(result);
       }
     });
+
+    function displayResults(result) {
+      const resultBox = document.getElementById("resultBox");
+      const offersContainer = document.getElementById("offersContainer");
+      const bill = result.bill || {};
+      const offers = result.offers || [];
+
+      document.getElementById("provider").textContent = bill.provider ?? "N/A";
+      document.getElementById("cost").textContent = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "N/A";
+      document.getElementById("speed").textContent = bill.speed_mbps ? `${bill.speed_mbps} Mbps` : "N/A";
+      resultBox.style.display = "block";
+
+      if (offers.length > 0) {
+        offers.forEach((offer, index) => {
+          const html = `
+            <div class="offer">
+              <strong>${offer.provider || "Provider N/A"}</strong><br>
+              ${offer.price ? `$${offer.price.toFixed(2)}` : ""} – ${offer.min_speed ? `${offer.min_speed} Mbps` : ""}<br>
+              <button data-index="${index}" class="view-deal-btn">View Deal</button>
+            </div>
+          `;
+          offersContainer.innerHTML += html;
+        });
+
+        window.currentBill = bill;
+        window.offers = offers;
+
+        document.querySelectorAll(".view-deal-btn").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            const index = parseInt(e.target.getAttribute("data-index"));
+            openFlutterComparison(window.offers[index], window.currentBill);
+          });
+        });
+      } else {
+        offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
+      }
+    }
   </script>
 </body>
 </html>
-
