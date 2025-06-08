@@ -75,19 +75,27 @@
     }
   </style>
 
+
   <!-- ✅ Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.9.0/firebase-auth-compat.js"></script>
+
   <script>
-    // ✅ Replace with your actual Firebase config:
+    // ✅ Real Firebase config (no duplication!)
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyDrg4Ly_XPloo0981G4RUX48BZYTyDuDlo",
+      authDomain: "billswap-affiliates-bf18d.firebaseapp.com",
+      projectId: "billswap-affiliates-bf18d",
+      storageBucket: "billswap-affiliates-bf18d.firebasestorage.app",
+      messagingSenderId: "740117701133",
+      appId: "1:740117701133:web:4e174fa8f1e4fb2bfeab44",
+      measurementId: "G-X1EL2W96X9"
     };
+
+    // ✅ Initialize Firebase
     firebase.initializeApp(firebaseConfig);
   </script>
+  
 </head>
 
 <body>
