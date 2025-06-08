@@ -1,51 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Upload Your Bill – BillSwap</title>
   <style>
     body {
+      font-family: "Inter", sans-serif;
+      background: #f3f4f6;
       margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-      background: #F9FAFB;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
+      padding: 1rem;
     }
     .container {
-      width: 100%;
       max-width: 480px;
-      padding: 1rem;
+      width: 100%;
     }
     .header {
       background-color: #5B2EFF;
-      padding: 1rem;
-      text-align: center;
       color: white;
+      text-align: center;
       font-size: 1.25rem;
       font-weight: 600;
+      padding: 1rem;
       border-radius: 0 0 12px 12px;
     }
     .card {
       background: white;
-      padding: 2rem 1.5rem;
       border-radius: 1rem;
+      padding: 2rem 1.5rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       text-align: center;
-    }
-    h2 {
-      font-size: 1.5rem;
-      color: #111827;
-      margin-bottom: 0.5rem;
-    }
-    p.description {
-      font-size: 0.95rem;
-      color: #6B7280;
-      margin-bottom: 1.5rem;
     }
     input[type="file"] {
       margin: 1rem 0;
@@ -53,23 +40,26 @@
     button {
       background-color: #5B2EFF;
       color: white;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
       font-weight: 600;
+      font-size: 1rem;
+      padding: 0.75rem;
       border: none;
       border-radius: 12px;
-      cursor: pointer;
       width: 100%;
-      margin-top: 1rem;
+      cursor: pointer;
+    }
+    .gray-btn {
+      background: #E5E7EB;
+      color: #111827;
     }
     .feature-list {
-      margin-top: 2rem;
       text-align: left;
+      font-size: 0.95rem;
+      margin-top: 2rem;
     }
     .feature-list li {
       margin-bottom: 0.5rem;
       color: #374151;
-      font-size: 0.95rem;
     }
     .result {
       margin-top: 2rem;
@@ -77,44 +67,53 @@
       border-radius: 0.75rem;
       padding: 1rem;
     }
-    .result h3 {
-      margin-bottom: 0.5rem;
-    }
-    .view-deal-btn {
-      background: none;
-      color: #5B2EFF;
-      border: none;
-      margin-top: 0.25rem;
-      cursor: pointer;
-    }
-    #loadingSpinner {
+    #loading {
       display: none;
-      text-align: center;
       margin-top: 1rem;
       color: #5B2EFF;
       font-weight: 500;
     }
   </style>
+
+  <!-- ✅ Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script>
+    // ✅ Replace with your actual Firebase config:
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 </head>
+
 <body>
   <div class="container">
     <div class="header">Upload Your Bill</div>
     <div class="card">
-      <h2>Upload Your Bill</h2>
-      <p class="description">Take a photo or upload an image of your current bill. Our AI will analyze it and find cheaper alternatives from other service providers.</p>
+      <p>Take a photo or upload an image of your current bill. Our AI will analyze it and find cheaper alternatives from other service providers.</p>
+
       <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" id="file" name="file" accept="image/*,.pdf" capture="environment" required><br>
+        <input type="file" id="file" name="file" accept="image/*,.pdf" capture="environment" />
         <button type="submit">Upload & Analyze</button>
       </form>
+
       <p style="margin: 1rem 0; color: #6B7280; font-size: 0.9rem;">or</p>
-      <button id="cameraBtn" style="background-color: #E5E7EB; color: #111827;">📸 Use Camera</button>
-      <div id="loadingSpinner">Analyzing your bill...</div>
+
+      <button id="cameraBtn" class="gray-btn">📸 Use Camera</button>
+
       <ul class="feature-list">
         <li>✅ Compare rates from multiple providers</li>
         <li>✅ See potential savings instantly</li>
         <li>✅ Switch providers with just one tap</li>
       </ul>
+
+      <p id="loading">🔄 Scanning your bill...</p>
     </div>
+
     <div id="resultBox" class="result" style="display:none;">
       <h3>Bill Summary</h3>
       <p><strong>Provider:</strong> <span id="provider"></span></p>
@@ -137,71 +136,34 @@
         }
       });
 
-      const showSpinner = () => document.getElementById("loadingSpinner").style.display = "block";
-      const hideSpinner = () => document.getElementById("loadingSpinner").style.display = "none";
-
-      const renderResults = (result) => {
-        hideSpinner();
-        const resultBox = document.getElementById("resultBox");
-        const offersContainer = document.getElementById("offersContainer");
-        const bill = result.bill || {};
-        const offers = result.offers || [];
-
-        document.getElementById("provider").textContent = bill.provider ?? "N/A";
-        document.getElementById("cost").textContent = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "N/A";
-        document.getElementById("speed").textContent = bill.speed_mbps ? `${bill.speed_mbps} Mbps` : "N/A";
-        resultBox.style.display = "block";
-
-        offersContainer.innerHTML = offers.length > 0 ? offers.map((offer, index) => `
-          <div class="offer">
-            <strong>${offer.provider || "Provider N/A"}</strong><br>
-            ${offer.price ? `$${offer.price.toFixed(2)}` : ""} – ${offer.min_speed ? `${offer.min_speed} Mbps` : ""}<br>
-            <button data-index="${index}" class="view-deal-btn">View Deal</button>
-          </div>
-        `).join('') : '<p>No cheaper offers found.</p>';
-
-        if (offers.length > 0) {
-          window.currentBill = bill;
-          window.offers = offers;
-          document.querySelectorAll(".view-deal-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-              const index = parseInt(e.target.getAttribute("data-index"));
-              const selectedOffer = window.offers[index];
-              const ref = new URL(document.referrer);
-              const baseURL = ref.hostname.includes("flutterflow.io") ? ref.origin : null;
-              const path = "/#/comparisonpage";
-              const params = new URLSearchParams({
-                planTitle: selectedOffer.title || "N/A",
-                planPrice: selectedOffer.price?.toFixed(2) || "N/A",
-                planProvider: selectedOffer.provider || "N/A",
-                planSpeed: selectedOffer.min_speed || "N/A",
-                planLink: selectedOffer.affiliatelink || "#",
-                type: "comparison",
-                currentProvider: bill.provider || "N/A",
-                currentCost: bill.monthly_cost?.toFixed(2) || "N/A",
-                currentSpeed: bill.speed_mbps || "N/A"
-              });
-              window.parent.location.href = `${baseURL}${path}?${params}`;
-            });
-          });
-        }
-      };
-
       document.getElementById("uploadForm").addEventListener("submit", async function (event) {
         event.preventDefault();
-        showSpinner();
+
         const file = document.getElementById("file").files[0];
+        const loading = document.getElementById("loading");
+        loading.style.display = "block";
+
+        if (!currentUID) {
+          alert("❌ You must be logged in to upload your bill.");
+          loading.style.display = "none";
+          return;
+        }
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("user_id", currentUID);
 
-        const response = await fetch("https://billswap-proxy.jsbenoit.workers.dev", {
-          method: "POST",
-          body: formData
-        });
-
-        const result = await response.json();
-        renderResults(result);
+        try {
+          const response = await fetch("https://billswap-proxy.jsbenoit.workers.dev", {
+            method: "POST",
+            body: formData
+          });
+          const result = await response.json();
+          loading.style.display = "none";
+          handleResults(result);
+        } catch (err) {
+          loading.textContent = "❌ Upload failed: " + err.message;
+        }
       });
 
       document.getElementById("cameraBtn").addEventListener("click", () => {
@@ -210,24 +172,97 @@
         input.accept = "image/*";
         input.capture = "environment";
         input.onchange = async (e) => {
-          showSpinner();
           const file = e.target.files[0];
           const reader = new FileReader();
           reader.onloadend = async () => {
             const base64Image = reader.result.split(",")[1];
+            const loading = document.getElementById("loading");
+            loading.style.display = "block";
+
+            if (!currentUID) {
+              alert("❌ You must be logged in to upload.");
+              loading.style.display = "none";
+              return;
+            }
+
             const response = await fetch("https://billswap-proxy.jsbenoit.workers.dev", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ image_base64: base64Image, user_id: currentUID })
             });
+
             const result = await response.json();
-            renderResults(result);
+            loading.style.display = "none";
+            handleResults(result);
           };
           reader.readAsDataURL(file);
         };
         input.click();
       });
     };
+
+    function handleResults(result) {
+      const resultBox = document.getElementById("resultBox");
+      const offersContainer = document.getElementById("offersContainer");
+      const bill = result.bill || {};
+      const offers = result.offers || [];
+
+      document.getElementById("provider").textContent = bill.provider ?? "N/A";
+      document.getElementById("cost").textContent = bill.monthly_cost != null ? `$${bill.monthly_cost.toFixed(2)}` : "N/A";
+      document.getElementById("speed").textContent = bill.speed_mbps ? `${bill.speed_mbps} Mbps` : "N/A";
+      resultBox.style.display = "block";
+
+      offersContainer.innerHTML = "";
+      if (offers.length > 0) {
+        offers.forEach((offer, index) => {
+          const html = `
+            <div class="offer">
+              <strong>${offer.provider || "Provider N/A"}</strong><br>
+              ${offer.price ? `$${offer.price.toFixed(2)}` : ""} – ${offer.min_speed ? `${offer.min_speed} Mbps` : ""}<br>
+              <button data-index="${index}" class="view-deal-btn">View Deal</button>
+            </div>
+          `;
+          offersContainer.innerHTML += html;
+        });
+
+        window.currentBill = bill;
+        window.offers = offers;
+
+        document.querySelectorAll(".view-deal-btn").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            const index = parseInt(e.target.getAttribute("data-index"));
+            const selectedOffer = window.offers[index];
+
+            let baseURL;
+            try {
+              const referrer = document.referrer;
+              const parsedRef = new URL(referrer);
+              baseURL = parsedRef.hostname.includes("flutterflow.io") ? parsedRef.origin : null;
+            } catch (err) {
+              alert("This feature only works within the app.");
+              return;
+            }
+
+            const comparisonPath = "/#/comparisonpage";
+            const params = new URLSearchParams({
+              planTitle: selectedOffer.title || "N/A",
+              planPrice: selectedOffer.price?.toFixed(2) || "N/A",
+              planProvider: selectedOffer.provider || "N/A",
+              planSpeed: selectedOffer.min_speed || "N/A",
+              planLink: selectedOffer.affiliatelink || "#",
+              type: "comparison",
+              currentProvider: bill.provider || "N/A",
+              currentCost: bill.monthly_cost?.toFixed(2) || "N/A",
+              currentSpeed: bill.speed_mbps || "N/A"
+            });
+
+            window.parent.location.href = `${baseURL}${comparisonPath}?${params.toString()}`;
+          });
+        });
+      } else {
+        offersContainer.innerHTML = `<p>No cheaper offers found.</p>`;
+      }
+    }
   </script>
 </body>
 </html>
